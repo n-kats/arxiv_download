@@ -49,6 +49,31 @@ func DownloadOnce(q *QueryParams) (*ArXivInfo, error) {
 	return data, err
 }
 
+func DownloadOnceWithSave(q *QueryParams, fnameFormat string, wait time.Duration) (int, error) {
+	data, err := DownloadOnce(q)
+	if err != nil {
+		return len(data.Entries), err
+	}
+	fname := fmt.Sprintf(fnameFormat, q.Start, q.Start+q.MaxResults-1)
+	j, err := json.Marshal(data.Entries)
+	if err != nil || data.IsEmpty() {
+		return len(data.Entries), err
+	}
+	err = ioutil.WriteFile(fname, j, os.ModePerm)
+	return len(data.Entries), err
+}
+
+// fnameFormat should be as "data_%d_%d"
+func DownloadWithEachSave(q QueryParams, fnameFormat string, wait time.Duration) error {
+	for {
+		n, err := DownloadOnceWithSave(&q, fnameFormat, wait)
+		if n == 0 || err != nil {
+			return err
+		}
+		q.Next()
+	}
+}
+
 func DownloadAll(q *QueryParams, wait time.Duration) ([]Entry, error) {
 	entries := []Entry{}
 	retryN := 0
@@ -76,6 +101,7 @@ func DownloadAll(q *QueryParams, wait time.Duration) ([]Entry, error) {
 	}
 	return entries, err
 }
+
 func Download(q QueryParams, fname string, wait time.Duration) error {
 	data, err := DownloadAll(&q, wait)
 	if err != nil {

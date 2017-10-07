@@ -14,9 +14,11 @@ func main() {
 	var cat string
 	var w int
 	var step int
+	var eachSave bool
 	flag.IntVar(&w, "wait", 10, "wait n seconds for each download")
 	flag.StringVar(&cat, "cat", "", "category math.GT, cs.AI")
 	flag.IntVar(&step, "step", 1000, "number of entries for each request")
+	flag.BoolVar(&eachSave, "each-save", true, "use DownloadWithEachSave")
 	flag.Parse()
 	if cat == "" {
 		fmt.Println("set category")
@@ -30,9 +32,17 @@ func main() {
 		SortOrder:   Ascending,
 	}
 	wait := time.Duration(w) * time.Second
-	fname := fmt.Sprintf("data_%s_%d.json", strings.Replace(cat, ".", "_", 1), time.Now().Unix())
-	err := Download(q, fname, wait)
-	if err != nil {
-		panic(err)
+	if eachSave {
+		fnameFormat := fmt.Sprintf("data/data_%s_%%d_%%d.json", strings.Replace(cat, ".", "_", 1))
+		err := DownloadWithEachSave(q, fnameFormat, wait)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		fname := fmt.Sprintf("data_%s_%d.json", strings.Replace(cat, ".", "_", 1), time.Now().Unix())
+		err := Download(q, fname, wait)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
